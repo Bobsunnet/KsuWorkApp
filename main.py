@@ -3,7 +3,7 @@ from PyQt5.QtCore import Qt
 import dbConnector
 import sys
 import re
-import refDB as rdb
+import refDB
 
 
 class TableWindow(QtWidgets.QMainWindow):
@@ -12,16 +12,17 @@ class TableWindow(QtWidgets.QMainWindow):
         self.setup_ui()
         self.table_view_setup()
         self.btns_setup()
+        self.layout_setup()
 
 
     def table_view_setup(self):
-        self.table_view = QtWidgets.QTableView(self)
+        self.table_view = QtWidgets.QTableView()
         # self.setCentralWidget(self.table_view)
-        self.table_view.setGeometry(0, 35, 800,365)
+        # self.table_view.setGeometry(0, 35, 800,365)
 
-        self.model = rdb.QSqlTableModel(db=rdb.db)
+        self.model = refDB.QSqlTableModel(db=refDB.db)
         self.model.setTable('refugees')
-        self.model.setEditStrategy(rdb.QSqlTableModel.EditStrategy.OnManualSubmit)
+        self.model.setEditStrategy(refDB.QSqlTableModel.EditStrategy.OnFieldChange)
         self.model.sort(0, Qt.SortOrder.DescendingOrder)
         self.model.select()
 
@@ -29,6 +30,45 @@ class TableWindow(QtWidgets.QMainWindow):
         self.table_view.resizeColumnsToContents()
         self.table_view.resizeRowsToContents()
 
+        # self.table_view.selectionModel().selectionChanged.connect(self.cell_changed)
+        self.table_view.selectionModel().currentChanged.connect(self.current_cell_changed)
+
+    def layout_setup(self):
+        buttons_layout = QtWidgets.QHBoxLayout()
+        buttons_layout_widget = QtWidgets.QWidget()
+
+        main_Vlayout = QtWidgets.QVBoxLayout()
+        main_Vlayout.addWidget(buttons_layout_widget)
+        main_Vlayout.addWidget(self.table_view)
+
+        buttons_layout.addWidget(self.lbl_finder)
+        buttons_layout.addWidget(self.le_finder)
+        buttons_layout.addWidget(self.btn_finder)
+        buttons_layout.addWidget(self.btn_new_row)
+        buttons_layout.addWidget(self.btn_save_all)
+        buttons_layout.addWidget(self.btn_show_all)
+        buttons_layout.addWidget(self.btn_delete_row)
+
+        buttons_layout_widget.setLayout(buttons_layout)
+
+        main_widget = QtWidgets.QWidget()
+        main_widget.setLayout(main_Vlayout)
+
+        self.setCentralWidget(main_widget)
+
+
+    def current_cell_changed(self, current, previous):
+        cell_value = self.model.data(self.model.index(previous.row(), previous.column()))
+        current_row = previous.row()
+        contact_ids = [self.model.data(self.model.index(row, 1)) for row in range(self.model.rowCount())
+                       if row != current_row]
+        if cell_value in contact_ids:
+            self.btn_show_all_clicked()
+
+
+    # def cell_changed(self, selected, deselected):
+    #     for cell in deselected.indexes():
+    #         print(f'cell row: {cell.row()}, column: {cell.column()} changed')
 
     def filter_model(self, s):
         self.model.setFilter(s)
@@ -62,36 +102,36 @@ class TableWindow(QtWidgets.QMainWindow):
         self.model.submitAll()
 
     def btns_setup(self):
-        self.lbl_finder = QtWidgets.QLabel(self)
-        self.lbl_finder.setGeometry(4,0, 50, 30)
-        self.lbl_finder.setText('Search')
+        self.lbl_finder = QtWidgets.QLabel()
+        # self.lbl_finder.setGeometry(4,0, 70, 30)
+        self.lbl_finder.setText('Пошук по ID')
 
-        self.le_finder = QtWidgets.QLineEdit(self)
-        self.le_finder.setGeometry(51, 0, 70, 30)
+        self.le_finder = QtWidgets.QLineEdit()
+        # self.le_finder.setGeometry(71, 0, 70, 30)
 
-        self.btn_finder = QtWidgets.QPushButton(self)
-        self.btn_finder.setGeometry(130,0, 40, 30)
-        self.btn_finder.setText('FInd')
+        self.btn_finder = QtWidgets.QPushButton()
+        # self.btn_finder.setGeometry(150,0, 60, 30)
+        self.btn_finder.setText('Знайти')
         self.btn_finder.clicked.connect(self.btn_finder_clicked)
 
-        self.btn_new_row = QtWidgets.QPushButton(self)
-        self.btn_new_row.setGeometry(190, 3, 40, 24)
+        self.btn_new_row = QtWidgets.QPushButton()
+        # self.btn_new_row.setGeometry(220, 3, 40, 24)
         self.btn_new_row.setText('+')
         self.btn_new_row.clicked.connect(self.btn_new_row_clicked)
 
-        self.btn_save_all = QtWidgets.QPushButton(self)
-        self.btn_save_all.setGeometry(240, 0, 40, 30)
-        self.btn_save_all.setText('Save')
+        self.btn_save_all = QtWidgets.QPushButton()
+        # self.btn_save_all.setGeometry(270, 0, 60, 30)
+        self.btn_save_all.setText('Зберегти')
         self.btn_save_all.clicked.connect(self.btn_save_clicked)
 
-        self.btn_show_all = QtWidgets.QPushButton(self)
-        self.btn_show_all.setGeometry(290, 0, 40, 30)
-        self.btn_show_all.setText('Show')
+        self.btn_show_all = QtWidgets.QPushButton()
+        # self.btn_show_all.setGeometry(340, 0, 80, 30)
+        self.btn_show_all.setText('Показати все')
         self.btn_show_all.clicked.connect(self.btn_show_all_clicked)
 
-        self.btn_delete_row = QtWidgets.QPushButton(self)
-        self.btn_delete_row.setGeometry(340, 0, 40, 30)
-        self.btn_delete_row.setText('Delete')
+        self.btn_delete_row = QtWidgets.QPushButton()
+        # self.btn_delete_row.setGeometry(430, 0, 60, 30)
+        self.btn_delete_row.setText('Видалити')
         self.btn_delete_row.clicked.connect(self.btn_delete_row_clicked)
 
 
