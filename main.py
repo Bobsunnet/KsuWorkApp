@@ -11,21 +11,22 @@ class TableWindow(QtWidgets.QMainWindow):
         super(TableWindow, self).__init__()
         self.setup_ui()
         self.table_view_setup()
-        self.btns_setup()
+        self.buttons_setup()
         self.layout_setup()
 
 
     def table_view_setup(self):
-        self.table_view = QtWidgets.QTableView()
-        # self.setCentralWidget(self.table_view)
-        # self.table_view.setGeometry(0, 35, 800,365)
-
         self.model = refDB.QSqlTableModel(db=refDB.db)
         self.model.setTable('refugees')
         self.model.setEditStrategy(refDB.QSqlTableModel.EditStrategy.OnFieldChange)
         self.model.sort(0, Qt.SortOrder.DescendingOrder)
+        self.model.setHeaderData(1, Qt.Orientation.Horizontal, 'LSUKR')
+        self.model.setHeaderData(2, Qt.Orientation.Horizontal, 'Ім\'я')
+        self.model.setHeaderData(3, Qt.Orientation.Horizontal, 'Країна')
+        self.model.setHeaderData(4, Qt.Orientation.Horizontal, 'Детально')
         self.model.select()
 
+        self.table_view = QtWidgets.QTableView()
         self.table_view.setModel(self.model)
         self.table_view.resizeColumnsToContents()
         self.table_view.resizeRowsToContents()
@@ -45,7 +46,7 @@ class TableWindow(QtWidgets.QMainWindow):
         buttons_layout.addWidget(self.le_finder)
         buttons_layout.addWidget(self.btn_finder)
         buttons_layout.addWidget(self.btn_new_row)
-        buttons_layout.addWidget(self.btn_save_all)
+        # buttons_layout.addWidget(self.btn_save_all) пока нет функционала
         buttons_layout.addWidget(self.btn_show_all)
         buttons_layout.addWidget(self.btn_delete_row)
 
@@ -75,13 +76,35 @@ class TableWindow(QtWidgets.QMainWindow):
 
     def btn_finder_clicked(self):
         text = self.le_finder.text()
-        text_safe = re.sub(r'\D+', '', text)
+        text_safe = re.sub(r'\D+', '', text) #allows only digits to go through filter
         filtered_string = 'contact_id LIKE "%{}%"'.format(text_safe)
         self.filter_model(filtered_string)
 
     def btn_new_row_clicked(self):
-        dbConnector.insert_into_refugees()
-        self.btn_show_all_clicked()
+        operation_res = dbConnector.insert_into_refugees()
+        if operation_res[0] == 'Success':
+            self.btn_show_all_clicked()
+        elif operation_res[0] == 'integrity_error':
+            self.draw_new_line_error_message(operation_res[1])
+        elif operation_res[0] is False:
+            self.draw_general_error_message(operation_res[1])
+
+    def draw_new_line_error_message(self, exception_message):
+        error_msg = QtWidgets.QMessageBox()
+        error_msg.setWindowTitle('Помилка бази даних')
+        error_msg.setText('Неможливо створити новий рядок тому,\nщо є попередній з незаповеним LSUKR')
+        error_msg.setInformativeText(f'{exception_message}')
+        error_msg.setIcon(QtWidgets.QMessageBox.Critical)
+
+        error_msg.exec_()
+
+    def draw_general_error_message(self, exception_message):
+        generalDB_error_msg = QtWidgets.QMessageBox()
+        generalDB_error_msg.setWindowTitle('Помилка бази даних')
+        generalDB_error_msg.setText(f'Помилка в роботі з базою даних')
+        generalDB_error_msg.setInformativeText(f'{exception_message}')
+
+        generalDB_error_msg.exec_()
 
     def btn_show_all_clicked(self):
         self.le_finder.setText('')
@@ -99,38 +122,38 @@ class TableWindow(QtWidgets.QMainWindow):
         self.btn_show_all_clicked()
 
     def btn_save_clicked(self):
-        self.model.submitAll()
+        pass
 
-    def btns_setup(self):
+    def buttons_setup(self):
         self.lbl_finder = QtWidgets.QLabel()
-        # self.lbl_finder.setGeometry(4,0, 70, 30)
+        self.lbl_finder.setMaximumWidth(70)
         self.lbl_finder.setText('Пошук по ID')
 
         self.le_finder = QtWidgets.QLineEdit()
-        # self.le_finder.setGeometry(71, 0, 70, 30)
+        self.le_finder.setMaximumWidth(500)
 
         self.btn_finder = QtWidgets.QPushButton()
-        # self.btn_finder.setGeometry(150,0, 60, 30)
+        # self.btn_finder.setMaximumWidth(100)
         self.btn_finder.setText('Знайти')
         self.btn_finder.clicked.connect(self.btn_finder_clicked)
 
         self.btn_new_row = QtWidgets.QPushButton()
-        # self.btn_new_row.setGeometry(220, 3, 40, 24)
+        # self.btn_new_row.setMaximumWidth(100)
         self.btn_new_row.setText('+')
         self.btn_new_row.clicked.connect(self.btn_new_row_clicked)
 
         self.btn_save_all = QtWidgets.QPushButton()
-        # self.btn_save_all.setGeometry(270, 0, 60, 30)
+        # self.btn_save_all.setMaximumWidth(100)
         self.btn_save_all.setText('Зберегти')
         self.btn_save_all.clicked.connect(self.btn_save_clicked)
 
         self.btn_show_all = QtWidgets.QPushButton()
-        # self.btn_show_all.setGeometry(340, 0, 80, 30)
+        # self.btn_show_all.setMaximumWidth(100)
         self.btn_show_all.setText('Показати все')
         self.btn_show_all.clicked.connect(self.btn_show_all_clicked)
 
         self.btn_delete_row = QtWidgets.QPushButton()
-        # self.btn_delete_row.setGeometry(430, 0, 60, 30)
+        # self.btn_delete_row.setMaximumWidth(100)
         self.btn_delete_row.setText('Видалити')
         self.btn_delete_row.clicked.connect(self.btn_delete_row_clicked)
 

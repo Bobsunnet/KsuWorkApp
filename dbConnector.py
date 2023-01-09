@@ -26,8 +26,13 @@ def insert_into_refugees(contact_id='', name='', city='', description=''):
         try:
             cursor = connection.cursor()
             cursor.execute(insert_into_db_query)
+            return 'Success'
+        except sq.IntegrityError as integrity_error:
+            print(f'[ERROR] problem: {integrity_error}')
+            return 'integrity_error', integrity_error
         except Exception as ex:
             print(f'[ERROR] problem: {ex}')
+            return False, ex
 
 
 def select_all_from_refugees():
@@ -114,7 +119,4 @@ def delete_row(contact_id):
 
 
 if __name__ == '__main__':
-    insert_into_refugees('0003','bob','berezan','texttxttx')
-    # update_city_refugees(102, 'London')
-    # update_name_refugees(102, 'kurwa')
-    print(select_all_from_refugees())
+    insert_into_refugees()
