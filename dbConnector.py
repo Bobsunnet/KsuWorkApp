@@ -26,7 +26,7 @@ def insert_into_refugees(contact_id='', name='', city='', description=''):
         try:
             cursor = connection.cursor()
             cursor.execute(insert_into_db_query)
-            return 'Success'
+            return 'Success', None
         except sq.IntegrityError as integrity_error:
             print(f'[ERROR] problem: {integrity_error}')
             return 'integrity_error', integrity_error

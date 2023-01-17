@@ -46,7 +46,6 @@ class TableWindow(QtWidgets.QMainWindow):
         header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
         header.setSectionResizeMode(4, QtWidgets.QHeaderView.Stretch)
 
-        # self.table_view.selectionModel().selectionChanged.connect(self.cell_changed)
         self.table_view.selectionModel().currentChanged.connect(self.cell_highlighted)
 
     def layout_setup(self):
@@ -170,6 +169,7 @@ class TableWindow(QtWidgets.QMainWindow):
 
     def btn_new_row_clicked(self):
         operation_res = dbConnector.insert_into_refugees()
+        print(operation_res[0])
         if operation_res[0] == 'Success':
             self.btn_show_all_clicked()
         elif operation_res[0] == 'integrity_error':
