@@ -1,6 +1,10 @@
 import sqlite3 as sq
+from datetime import datetime
+from config import *
 
-refugees_database = 'refuges.db'
+now_date = datetime.utcnow().date()
+
+refugees_database = DB_NAME
 table = 'refugees'
 
 create_db_query = '''
@@ -15,13 +19,16 @@ create_db_query = '''
 
 
 def insert_into_refugees(contact_id='', name='', city='', description=''):
+    now_date = datetime.utcnow().date()
+
     insert_into_db_query = f'''
-            INSERT INTO {table} (contact_id, name, city, description)
+            INSERT INTO {table} (contact_id, name, city, description, date)
             VALUES (
             '{contact_id}', 
             '{name}',
             '{city}', 
-            '{description}' ); '''
+            '{description}',
+             '{now_date}'); '''
     with sq.connect(refugees_database) as connection:
         try:
             cursor = connection.cursor()
@@ -110,6 +117,7 @@ def delete_row(contact_id):
     DELETE FROM {table}
     WHERE contact_id = '{contact_id}';
 '''
+    print(f'dbCOnnecor {contact_id}')
     with sq.connect(refugees_database) as connection:
         try:
             cursor = connection.cursor()
