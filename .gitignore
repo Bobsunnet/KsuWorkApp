@@ -240,4 +240,5 @@ fabric.properties
 
 test.py
 backups/
+logger/
 boot_config.txt

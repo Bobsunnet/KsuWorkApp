@@ -169,9 +169,9 @@ class TableWindow(QtWidgets.QMainWindow):
         self.draw_label_info(current_row)
         # self.label_cell_change(current_row, current_col)
 
-        self.chek_lsukr(previous.row(), previous.column())
+        self._chek_lsukr(previous.row(), previous.column())
 
-    def chek_lsukr(self, row, col):
+    def _chek_lsukr(self, row, col):
         cell_value = self.model.data(self.model.index(row, col))
         current_row = row
         # создаем список всех LSUKR и сравниваем есть ли уже такой как в измененной ячейке
@@ -184,9 +184,6 @@ class TableWindow(QtWidgets.QMainWindow):
         date_record = self.model.data(self.model.index(row,5))
         self.lnedit_date.setText(str(date_record))
         self.label_info.setText(f'К-ть рядків: \n{self.model.rowCount()}\n\nДата редагування: \n{date_record}')
-
-    def change_date_edit(self):
-        pass
 
     def change_text_widget(self, row, col):
         text = self.model.data(self.model.index(row, col))
@@ -267,7 +264,6 @@ class TableWindow(QtWidgets.QMainWindow):
     def setup_ui(self):
         self.setWindowTitle('Table Main Window')
         self.setMinimumSize(1000, 600)
-        # self.setStyleSheet('background-color: #fcfee2;')
 
 
 app = QtWidgets.QApplication(sys.argv)
