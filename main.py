@@ -1,5 +1,5 @@
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QModelIndex
 import dbConnector
 import sys
 import re
@@ -14,13 +14,16 @@ HEADERS_NAMES = ['LSUKR', 'Ім\'я', 'Країна', 'Детально']
 class TextWidget(QtWidgets.QTextEdit):
     def __init__(self):
         super().__init__()
-        self.linked_cell = None
+        self.linked_cell:tuple | None = None
 
-    def link_cell(self, cell: tuple):
-        self.linked_cell = cell
+    def link_cell(self, cell: QModelIndex, lsukr):
+        self.linked_cell = cell, lsukr
 
     def get_linked_cell(self):
         return self.linked_cell
+
+    def unlink_cell(self):
+        self.linked_cell = None
 
 
 class TableWindow(QtWidgets.QMainWindow):
@@ -37,7 +40,7 @@ class TableWindow(QtWidgets.QMainWindow):
         self.model = sql_pyqt.QSqlTableModel(db=sql_pyqt.db)
         self.model.setTable('refugees')
 
-        self.model.setEditStrategy(sql_pyqt.QSqlTableModel.EditStrategy.OnFieldChange)
+        self.model.setEditStrategy(sql_pyqt.QSqlTableModel.EditStrategy.OnRowChange)
         self.model.sort(0, Qt.SortOrder.DescendingOrder)
         # self.model.removeColumns(5,1)
 
@@ -163,15 +166,19 @@ class TableWindow(QtWidgets.QMainWindow):
 
     def cell_highlighted(self, current, previous):
         current_row, current_col = current.row(), current.column()
-        self.text_widget.link_cell((current_row, current_col))
-        #меняем текст в виджете
-        self.change_text_widget(current_row, current_col)
+        lsukr = self.get_lsukr(current)  # считываем значение lsukr
+        self.text_widget.link_cell(current, lsukr)
+        self.change_text_widget(current)  # меняем текст в большом окне
         self.draw_label_info(current_row)
-        # self.label_cell_change(current_row, current_col)
 
-        self._chek_lsukr(previous.row(), previous.column())
+        self._check_lsukr(previous.row(), previous.column())
 
-    def _chek_lsukr(self, row, col):
+    def get_lsukr(self, indx:QModelIndex):
+        indx = indx.sibling(indx.row(), 1)
+        lsukr = self.model.data(indx)
+        return lsukr
+
+    def _check_lsukr(self, row, col):
         cell_value = self.model.data(self.model.index(row, col))
         current_row = row
         # создаем список всех LSUKR и сравниваем есть ли уже такой как в измененной ячейке
@@ -185,8 +192,8 @@ class TableWindow(QtWidgets.QMainWindow):
         self.lnedit_date.setText(str(date_record))
         self.label_info.setText(f'К-ть рядків: \n{self.model.rowCount()}\n\nДата редагування: \n{date_record}')
 
-    def change_text_widget(self, row, col):
-        text = self.model.data(self.model.index(row, col))
+    def change_text_widget(self, indx):
+        text = self.model.data(indx)
         self.text_widget.setText(str(text))
 
     def get_linked_cell(self):
@@ -196,8 +203,11 @@ class TableWindow(QtWidgets.QMainWindow):
         text = self.text_widget.toPlainText()
         linked_cell = self.get_linked_cell()
         if linked_cell:
-            row, col = linked_cell
-            self.model.setData(self.model.index(row, col), text)
+            indx = linked_cell[0]
+            prev_lsukr = linked_cell[1]
+            current_lsukr = self.model.data(indx.siblingAtColumn(1))
+            if prev_lsukr == current_lsukr:
+                self.model.setData(indx, text)
 
     def change_date_value(self):
         date = self.lnedit_date.text()
@@ -212,8 +222,8 @@ class TableWindow(QtWidgets.QMainWindow):
 
     def btn_finder_clicked(self):
         text = self.lnedit_finder.text()
-        text_safe = re.sub(r'\D+', '', text)  # allows only digits to go through filter
-        filtered_string = 'contact_id LIKE "%{}%"'.format(text_safe)
+        text_safe = re.sub(r'\";', '', text)  # allows only digits to go through filter
+        filtered_string = f'contact_id LIKE "%{text_safe}%" OR city LIKE "%{text_safe}%" OR name LIKE "%{text_safe}%"'
         self.filter_model(filtered_string)
 
     def btn_new_row_clicked(self):
@@ -266,9 +276,10 @@ class TableWindow(QtWidgets.QMainWindow):
         self.setMinimumSize(1000, 600)
 
 
-app = QtWidgets.QApplication(sys.argv)
+if __name__ == '__main__':
+    app = QtWidgets.QApplication(sys.argv)
 
-mainWindow = TableWindow()
-mainWindow.show()
+    mainWindow = TableWindow()
+    mainWindow.show()
 
-sys.exit(app.exec_())
+    sys.exit(app.exec_())
